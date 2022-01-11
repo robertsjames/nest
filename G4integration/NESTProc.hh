@@ -17,7 +17,6 @@
 #include "Randomize.hh"
 #include "globals.hh"
 #include "templates.hh"
-//#include "G4ThermalElectron.hh"
 #include "G4MaterialCutsCouple.hh"
 #include "G4ProductionCuts.hh"
 #include "G4SystemOfUnits.hh"
@@ -50,18 +49,6 @@ struct Lineage {
 class NoTimeParticleChange : public G4ParticleChange {
  public:
   NoTimeParticleChange() : G4ParticleChange() { debugFlag = false; }
-};
-
-class NESTThermalElectron : public G4ParticleDefinition {
- private:
-  static NESTThermalElectron* theInstance;
-  NESTThermalElectron() {}
-  ~NESTThermalElectron() {}
-
- public:
-  static NESTThermalElectron* Definition();
-  static NESTThermalElectron* ThermalElectronDefinition();
-  static NESTThermalElectron* ThermalElectron();
 };
 
 class NESTProc : public G4VRestDiscreteProcess {
@@ -104,9 +91,6 @@ class NESTProc : public G4VRestDiscreteProcess {
   // Returns the quantum (photon/electron) yield factor. See above.
 
   Lineage GetChildType(const G4Track* aTrack, const G4Track* sec) const;
-  G4Track* MakePhoton(G4ThreeVector xyz, double t);
-  G4Track* MakeElectron(G4ThreeVector xyz, double density, double t,
-                        double kin_E);
   std::vector<NEST::Lineage> getLastLineages() const {
     return lineages_prevEvent;
   }
@@ -160,7 +144,6 @@ inline G4bool NESTProc::IsApplicable(
     const G4ParticleDefinition& aParticleType) {
   if (aParticleType.GetParticleName() == "opticalphoton") return false;
   if (aParticleType.IsShortLived()) return false;
-  if (aParticleType.GetParticleName() == "thermalelectron") return false;
   // if(abs(aParticleType.GetPDGEncoding())==2112 || //neutron (no E-dep.)
   return true;
 }

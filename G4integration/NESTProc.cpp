@@ -65,47 +65,6 @@ NESTProc::NESTProc(const G4String& processName, G4ProcessType type,
 
 NESTProc::~NESTProc() {}  // destructor needed to avoid linker error
 
-G4Track* NESTProc::MakePhoton(G4ThreeVector xyz, double t) {
-  // Determine polarization of new photon
-  G4ParticleMomentum photonMomentum(G4RandomDirection());
-  G4ThreeVector perp = photonMomentum.cross(G4RandomDirection());
-  G4ThreeVector photonPolarization = perp.unit();
-  VDetector* detector = fNESTcalc->GetDetector();
-  G4double sampledEnergy = 7.08 * eV;  // default if non-detailed secondaries
-  if (detailed_secondaries)
-    sampledEnergy =
-        fNESTcalc->PhotonEnergy(false /*i.e. S1*/, detector->get_inGas(),
-                                detector->get_T_Kelvin()) *
-        eV;
-
-  G4DynamicParticle* aQuantum =
-      new G4DynamicParticle(G4OpticalPhoton::OpticalPhoton(), photonMomentum);
-  aQuantum->SetPolarization(photonPolarization.x(), photonPolarization.y(),
-                            photonPolarization.z());
-  aQuantum->SetKineticEnergy(sampledEnergy);
-  // calculate time
-
-  return new G4Track(aQuantum, t, xyz);
-}
-
-G4Track* NESTProc::MakeElectron(G4ThreeVector xyz, double density, double t,
-                                double kin_E) {
-  // Determine polarization of new photon
-
-  double efield_here = fDetector->FitEF(xyz.x(), xyz.y(), xyz.z());
-
-  if (efield_here > 0) {
-    G4ParticleMomentum electronMomentum(0, 0, 1);
-    G4DynamicParticle* aQuantum = new G4DynamicParticle(
-        NESTThermalElectron::ThermalElectron(), electronMomentum);
-    aQuantum->SetKineticEnergy(kin_E);
-    return new G4Track(aQuantum, t, xyz);
-  } else {
-    return nullptr;
-  }
-  // calculate time
-}
-
 void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
   pParticleChange->SetNumberOfSecondaries(1e7);
 
@@ -133,56 +92,6 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
           lineage.Z, NESTcalc::default_NuisParam, NESTcalc::default_FreeParam,
           detailed_secondaries);
       lineage.result_calculated = true;
-      if (lineage.result.quanta.photons) {
-        auto photontimes = lineage.result.photon_times.begin();
-        double ecum = 0;
-        int phot_cum = 0;
-        for (auto& hit : lineage.hits) {
-          hit.result.photons =
-              round((lineage.result.quanta.photons - phot_cum) * hit.E /
-                    (etot - ecum));
-          ecum += hit.E;
-          phot_cum += hit.result.photons;
-          for (int i = 0; i < hit.result.photons; ++i) {
-            if (YieldFactor == 1 ||
-                (YieldFactor > 0 &&
-                 RandomGen::rndm()->rand_uniform() < YieldFactor)) {
-              if (stack_photons) {
-                G4Track* onePhoton = MakePhoton(hit.xyz, *photontimes + hit.t);
-                pParticleChange->AddSecondary(onePhoton);
-              }
-            }
-            ++photontimes;
-          }
-        }
-      }
-      if (lineage.result.quanta.electrons) {
-        double ecum = 0;
-        double el_cum = 0;
-        double electron_speed = fNESTcalc->SetDriftVelocity(
-            fDetector->get_T_Kelvin(), lineage.density, efield_here);
-        double electron_kin_E =
-            NESTThermalElectron::ThermalElectron()->GetPDGMass() *
-            std::pow(electron_speed * mm / us, 2);
-        for (auto& hit : lineage.hits) {
-          hit.result.electrons =
-              round((lineage.result.quanta.electrons - el_cum) * hit.E /
-                    (etot - ecum));
-          ecum += hit.E;
-          el_cum += hit.result.electrons;
-          for (int i = 0; i < hit.result.electrons; ++i) {
-            if (YieldFactor == 1 ||
-                (YieldFactor > 0 &&
-                 RandomGen::rndm()->rand_uniform() < YieldFactor)) {
-              if (stack_electrons) {
-                G4Track* oneElectron = MakeElectron(hit.xyz, lineage.density,
-                                                    hit.t, electron_kin_E);
-                if (oneElectron) pParticleChange->AddSecondary(oneElectron);
-              }
-            }
-          }
-        }
-      }
 
       lineages_prevEvent.push_back(lineage);
     }
@@ -477,50 +386,4 @@ G4double NESTProc::GetMeanLifeTime(const G4Track&,
   *condition = Forced;
   // this function and this condition has the same effect as the above
   return DBL_MAX;
-}
-
-#include "G4ParticleTable.hh"
-// ######################################################################
-// ###                    THERMAL (DRIFT) ELECTRON                    ###
-// ######################################################################
-NESTThermalElectron* NESTThermalElectron::theInstance = 0;
-
-NESTThermalElectron* NESTThermalElectron::Definition() {
-  if (theInstance != 0) return theInstance;
-  const G4String name = "thermalelectron";
-  // search in particle table]
-  G4ParticleTable* pTable = G4ParticleTable::GetParticleTable();
-  G4ParticleDefinition* anInstance = pTable->FindParticle(name);
-  if (anInstance == 0) {
-    // create particle
-    //
-    //    Arguments for constructor are as follows
-    //               name             mass          width         charge
-    //             2*spin           parity  C-conjugation
-    //          2*Isospin       2*Isospin3       G-parity
-    //               type    lepton number  baryon number   PDG encoding
-    //             stable         lifetime    decay table
-    //             shortlived      subType    anti_encoding
-
-    // use constants in CLHEP
-    //  static const double electron_mass_c2 = 0.51099906 * MeV;
-
-    anInstance = new G4ParticleDefinition(
-        name, electron_mass_c2, 0.0 * MeV, -1. * eplus, 1, 0, 0, 0, 0, 0,
-        "lepton", 1, 0, 11, true, -1.0, NULL, false, "e");
-    // Bohr Magnetron
-    G4double muB = -0.5 * eplus * hbar_Planck / (electron_mass_c2 / c_squared);
-
-    anInstance->SetPDGMagneticMoment(muB * 2. * 1.0011596521859);
-  }
-  theInstance = reinterpret_cast<NESTThermalElectron*>(anInstance);
-  return theInstance;
-}
-
-NESTThermalElectron* NESTThermalElectron::ThermalElectronDefinition() {
-  return Definition();
-}
-
-NESTThermalElectron* NESTThermalElectron::ThermalElectron() {
-  return Definition();
 }
