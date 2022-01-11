@@ -5,10 +5,10 @@ include(CMakeFindDependencyMacro)
 
 list(APPEND CMAKE_MODULE_PATH ${NEST_CMAKE_DIR})
 set(NEST_INCLUDE_DIRS
-    "${PACKAGE_PREFIX_DIR}/include"
-    "${PACKAGE_PREFIX_DIR}/include/NEST"
-    "${PACKAGE_PREFIX_DIR}/include/NEST/G4"
-    "${PACKAGE_PREFIX_DIR}/include/Detectors"
+    "@CMAKE_INSTALL_PREFIX@/include"
+    "@CMAKE_INSTALL_PREFIX@/include/NEST"
+    "@CMAKE_INSTALL_PREFIX@/include/NEST/G4"
+    "@CMAKE_INSTALL_PREFIX@/include/Detectors"
 )
 
 # Internal gcem build
