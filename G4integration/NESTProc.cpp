@@ -95,9 +95,6 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
 
       lineages_prevEvent.push_back(lineage);
     }
-    if (analysisTrigger) {
-      analysisTrigger(lineages_prevEvent);
-    }
     lineages.clear();
     track_lins.clear();
   }

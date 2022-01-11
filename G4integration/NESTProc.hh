@@ -97,12 +97,6 @@ class NESTProc : public G4VRestDiscreteProcess {
   void SetDetailedSecondaries(bool detailed) {
     detailed_secondaries = detailed;
   }
-  void SetStackElectrons(bool stack_e) { stack_electrons = stack_e; }
-  void SetStackPhotons(bool stack_ph) { stack_photons = stack_ph; }
-  void SetAnalysisTrigger(
-      std::function<void(std::vector<NEST::Lineage>)> _analysisTrigger) {
-    this->analysisTrigger = _analysisTrigger;
-  }
 
   void SetGamma_break(double _gamma_break) { this->gamma_break = _gamma_break; }
 
@@ -126,14 +120,11 @@ class NESTProc : public G4VRestDiscreteProcess {
 
   G4double YieldFactor = 1;  // turns scint. on/off
   bool detailed_secondaries = true;
-  bool stack_electrons = true;
-  bool stack_photons = true;
   double gamma_break =
       9 * mm;  // Gammas will not pass on their lineage (if they have one, e.g.
                // bremsstrahlung) if they are this far from their origin.
   int verbose = 0;
 
-  std::function<void(std::vector<NEST::Lineage>)> analysisTrigger;
 };
 
 ////////////////////
