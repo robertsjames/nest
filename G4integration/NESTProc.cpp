@@ -32,16 +32,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "NESTProc.hh"
-#include <cmath>
-#include "G4Electron.hh"
 #include "G4EmProcessSubType.hh"  //lets you call this process Scintillation
 #include "G4ParticleTypes.hh"     //lets you refer to G4OpticalPhoton, etc.
-#include "G4PhysicalConstants.hh"
-#include "G4ProductionCuts.hh"
-#include "G4RandomDirection.hh"
-#include "G4SystemOfUnits.hh"
-#include "G4UserLimits.hh"
-#include "G4Version.hh"  //tells you what Geant4 version you are running
 #include "NESTStackingAction.hh"
 
 using namespace NEST;
@@ -58,9 +50,7 @@ NESTProc::NESTProc(const G4String& processName, G4ProcessType type,
   pParticleChange = &fParticleChange;
   SetProcessSubType(fScintillation);
 
-  if (verboseLevel > 0) {
-    G4cout << GetProcessName() << " is created " << G4endl;
-  }
+  G4cout << GetProcessName() << " is created " << G4endl;
 }
 
 NESTProc::~NESTProc() {}  // destructor needed to avoid linker error
@@ -72,7 +62,6 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
   if (aTrack.GetKineticEnergy() == 0 &&
       NESTStackingAction::theStackingAction->isUrgentEmpty() &&
       aStep.GetSecondary()->empty()) {
-    lineages_prevEvent.clear();
 
     for (auto& lineage : lineages) {
       double etot =
@@ -92,8 +81,6 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
           lineage.Z, NESTcalc::default_NuisParam, NESTcalc::default_FreeParam,
           detailed_secondaries);
       lineage.result_calculated = true;
-
-      lineages_prevEvent.push_back(lineage);
     }
     lineages.clear();
     track_lins.clear();
@@ -192,15 +179,13 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
             make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
                                  sec->GetMomentumDirection()),
                       myLinID->second));
-        if (verbose > 2) {
-          std::cout << "added "
-                    << sec->GetDynamicParticle()
-                           ->GetParticleDefinition()
-                           ->GetParticleName()
-                    << " to lineage " << lineages.size() - 1 << " type "
-                    << lineages[myLinID->second].type << " parent "
-                    << aTrack.GetDefinition()->GetParticleName() << std::endl;
-        }
+        std::cout << "added "
+                  << sec->GetDynamicParticle()
+                         ->GetParticleDefinition()
+                         ->GetParticleName()
+                  << " to lineage " << lineages.size() - 1 << " type "
+                  << lineages[myLinID->second].type << " parent "
+                  << aTrack.GetDefinition()->GetParticleName() << std::endl;
       }
     }
   }
@@ -213,8 +198,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
       INTERACTION_TYPE sec_type = sec_lin.type;
       if (sec_type != NoneType) {
         lineages.push_back(sec_lin);
-        if (verbose > 1)
-          cout << "Made new lineage from primary of type " << sec_type << endl;
+        cout << "Made new lineage from primary of type " << sec_type << endl;
 
         track_lins.insert(std::make_pair(
             make_tuple(aTrack.GetParentID(), aTrack.GetVertexPosition(),
@@ -233,13 +217,11 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
                 make_pair(make_tuple(sec->GetParentID(), sec->GetPosition(),
                                      sec->GetMomentumDirection()),
                           lineages.size() - 1));
-            if (verbose > 2) {
-              std::cout << "added "
-                        << sec->GetDynamicParticle()
-                               ->GetParticleDefinition()
-                               ->GetParticleName()
-                        << " to lineage " << lineages.size() - 1 << std::endl;
-            }
+            std::cout << "added "
+                      << sec->GetDynamicParticle()
+                             ->GetParticleDefinition()
+                             ->GetParticleName()
+                      << " to lineage " << lineages.size() - 1 << std::endl;
           }
         }
       }
@@ -258,13 +240,12 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
       // new lineage
       if (sec_type != NoneType &&
           (step_type == NoneType || step_type == ion || sec_type == ion)) {
-        if (verbose > 1)
-          cout << "Made new lineage " << lineages.size()
-               << " from secondary of particle " << aTrack.GetTrackID() << "("
-               << aTrack.GetDefinition()->GetParticleName() << " -> "
-               << sec->GetDefinition()->GetParticleName() << ")"
-               << " of type " << sec_type
-               << sec->GetCreatorProcess()->GetProcessName() << endl;
+        cout << "Made new lineage " << lineages.size()
+             << " from secondary of particle " << aTrack.GetTrackID() << "("
+             << aTrack.GetDefinition()->GetParticleName() << " -> "
+             << sec->GetDefinition()->GetParticleName() << ")"
+             << " of type " << sec_type
+             << sec->GetCreatorProcess()->GetProcessName() << endl;
         lineages.push_back(sec_lin);
       }
       step_type = sec_type;
@@ -279,8 +260,7 @@ G4VParticleChange* NESTProc::PostStepDoIt(const G4Track& aTrack,
           myLinID = --track_lins.end();
           ++sec_mylinid;
         }
-        if (verbose > 1)
-          cout << "Reassigned myLindID " << sec_mylinid << " times" << endl;
+        cout << "Reassigned myLindID " << sec_mylinid << " times" << endl;
       }
     }
   }
