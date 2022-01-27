@@ -36,6 +36,8 @@
 #include "G4ParticleTypes.hh"     //lets you refer to G4OpticalPhoton, etc.
 #include "NESTStackingAction.hh"
 
+#include "Deposit.hh"
+
 using namespace NEST;
 
 NESTProc::NESTProc(const G4String& processName, G4ProcessType type,
@@ -81,6 +83,11 @@ void NESTProc::TryPopLineages(const G4Track& aTrack, const G4Step& aStep) {
           lineage.Z, NESTcalc::default_NuisParam, NESTcalc::default_FreeParam,
           detailed_secondaries);
       lineage.result_calculated = true;
+
+      auto energyDeposit = std::make_unique<Deposits::EnergyDeposit>(etot, maxHit_xyz, 0., lineage.type);
+      auto deposit = Deposits::Deposit::Instance();
+      G4cout << G4RunManager::GetRunManager()->GetCurrentEvent() << G4endl;
+      deposit->PlaceDeposit(G4RunManager::GetRunManager()->GetCurrentEvent(), std::move(energyDeposit));
     }
     lineages.clear();
     track_lins.clear();

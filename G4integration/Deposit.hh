@@ -1,4 +1,3 @@
-
 #ifndef Deposit_h
 #define Deposit_h 1
 
@@ -28,7 +27,7 @@ public:
     Deposit(const Deposits::Deposit&) = delete;
     const Deposits::Deposit& operator=(const Deposits::Deposit&) = delete;
 
-    void PlaceDeposit(G4Event* event, std::unique_ptr<const Deposits::EnergyDeposit> deposit);
+    void PlaceDeposit(const G4Event* event, std::unique_ptr<const Deposits::EnergyDeposit> deposit);
 
 private:
     // This is a singleton class
