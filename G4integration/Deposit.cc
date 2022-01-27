@@ -1,10 +1,12 @@
 #include "Deposit.hh"
 
-Deposits::Deposit::Deposit()
+std::shared_ptr<Deposits::Deposit> Deposits::Deposit::Instance()
 {
+    static std::shared_ptr<Deposits::Deposit> deposit{new Deposits::Deposit};
+    return deposit;
 }
 
-Deposits::Deposit::~Deposit()
+Deposits::Deposit::Deposit()
 {
 }
 

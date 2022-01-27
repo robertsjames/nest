@@ -1,3 +1,4 @@
+
 #ifndef Deposit_h
 #define Deposit_h 1
 
@@ -21,12 +22,18 @@ struct EnergyDeposit
 class Deposit
 {
 public:
-    Deposit();
-    ~Deposit();
+    // This is a singleton class
+    static std::shared_ptr<Deposits::Deposit> Instance();
+    // Prevent copying
+    Deposit(const Deposits::Deposit&) = delete;
+    const Deposits::Deposit& operator=(const Deposits::Deposit&) = delete;
 
     void PlaceDeposit(G4Event* event, std::unique_ptr<const Deposits::EnergyDeposit> deposit);
 
 private:
+    // This is a singleton class
+    Deposit();
+
     std::vector<std::pair<G4int, std::unique_ptr<const Deposits::EnergyDeposit>>> fDeposits;
 };
 }
